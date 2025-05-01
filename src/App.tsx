@@ -9,6 +9,7 @@ import Login from "./pages/Login"; // Import Login page
 import Dashboard from "./pages/Dashboard"; // Import Dashboard page
 import Notes from "./pages/Notes"; // Import Notes page
 import Gallery from "./pages/Gallery"; // Import Gallery page
+import Messaging from "./pages/Messaging"; // Import Messaging page
 import { SessionContextProvider } from '@supabase/auth-helpers-react'; // Correct package for SessionContextProvider
 import { supabase } from '@/integrations/supabase/client'; // Import supabase client
 
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} /> {/* Add Dashboard route */}
             <Route path="/notes" element={<Notes />} /> {/* Add Notes route */}
             <Route path="/gallery" element={<Gallery />} /> {/* Add Gallery route */}
+            <Route path="/messaging" element={<Messaging />} /> {/* Add Messaging route */}
             <Route path="/" element={<Index />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

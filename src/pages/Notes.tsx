@@ -241,6 +241,17 @@ const Notes = () => {
               Gallery
             </Link>
           </li>
+           <li>
+            <Link
+              to="/messaging"
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "w-full justify-start"
+              )}
+            >
+              Messaging
+            </Link>
+          </li>
           {/* Add links for future mini-apps here */}
         </ul>
         {/* Logout button can be added here or in a shared layout */}
