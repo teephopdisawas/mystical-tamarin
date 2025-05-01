@@ -25,7 +25,7 @@ interface Message {
   user_id: string;
   content: string;
   created_at: string;
-  profiles?: { first_name: string | null; last_name: string | null } | null; // To fetch sender's name
+  // profiles?: { first_name: string | null; last_name: string | null } | null; // Removed for now
 }
 
 const Messaging = () => {
@@ -44,13 +44,10 @@ const Messaging = () => {
   // Function to fetch messages
   const fetchMessages = async () => {
     setLoading(true);
-    // Fetch messages and join with profiles to get sender name
-    // Note: If the join fails for historical messages due to RLS or data issues,
-    // the 'profiles' field might be null for those messages. New messages
-    // received via subscription should include profile data if the join works.
+    // Fetch only message fields for now
     const { data, error } = await supabase
       .from('messages')
-      .select('*, profiles(first_name, last_name)')
+      .select('id, user_id, content, created_at') // Select specific fields
       .order('created_at', { ascending: true }) // Order by timestamp
       .limit(50); // Limit the number of messages
 
@@ -58,6 +55,7 @@ const Messaging = () => {
       console.error('Error fetching messages:', error);
       showError('Failed to load messages.');
     } else if (data) {
+      console.log('Fetched messages:', data); // Log fetched data
       setMessages(data);
     }
     setLoading(false);
@@ -82,16 +80,17 @@ const Messaging = () => {
       .channel('public:messages') // Channel name
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async (payload) => {
         console.log('New message received!', payload);
-        // Fetch the new message with profile data
+        // Fetch the new message without profile data for now
         const { data, error } = await supabase
           .from('messages')
-          .select('*, profiles(first_name, last_name)')
+          .select('id, user_id, content, created_at') // Select specific fields
           .eq('id', payload.new.id)
           .single();
 
         if (error) {
           console.error('Error fetching new message data:', error);
         } else if (data) {
+          console.log('Fetched new message:', data); // Log new message data
           setMessages((prevMessages) => [...prevMessages, data]);
         }
       })
@@ -230,8 +229,9 @@ const Messaging = () => {
                       : "bg-gray-300 text-gray-800" // Gray background for others
                   )}
                 >
+                  {/* Display user_id for now */}
                   <p className="text-sm font-semibold mb-1">
-                    {message.profiles?.first_name || message.profiles?.last_name || 'Anonymous'} {/* Display sender name */}
+                    User ID: {message.user_id}
                   </p>
                   <p>{message.content}</p>
                   <p className="text-xs mt-1 opacity-75"> {/* Dim timestamp slightly */}
