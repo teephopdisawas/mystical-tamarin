@@ -1,42 +1,117 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // Import useEffect
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { evaluate, format } from 'mathjs'; // Import evaluate and format from mathjs
+
+type NumberBase = 'DEC' | 'BIN' | 'HEX' | 'OCT';
 
 const Calculator = () => {
   const [input, setInput] = useState('');
   const [result, setResult] = useState('');
+  const [currentBase, setCurrentBase] = useState<NumberBase>('DEC'); // State for current number base
+
+  // Function to convert a number string to the current base
+  const convertToBase = (numStr: string, base: NumberBase): string => {
+    try {
+      if (numStr === '' || numStr === 'Error') return numStr;
+
+      // Attempt to parse the number in base 10 first
+      const num = parseFloat(numStr);
+      if (isNaN(num)) return 'Invalid Number';
+
+      // Handle integers for binary, hex, octal
+      if (base !== 'DEC' && !Number.isInteger(num)) {
+         return 'Integer only'; // Indicate that non-integers can't be represented in other bases easily
+      }
+
+      switch (base) {
+        case 'DEC':
+          return num.toString();
+        case 'BIN':
+          return num.toString(2);
+        case 'HEX':
+          return num.toString(16).toUpperCase();
+        case 'OCT':
+          return num.toString(8);
+        default:
+          return numStr;
+      }
+    } catch (e) {
+      console.error("Conversion error:", e);
+      return 'Error';
+    }
+  };
+
+  // Effect to update the result display when input or base changes
+  useEffect(() => {
+    if (input === '') {
+      setResult('');
+      return;
+    }
+    try {
+      // Use mathjs to evaluate the expression
+      const calculatedResult = evaluate(input);
+      // Format the result and convert to the current base for display
+      const formattedResult = format(calculatedResult, { precision: 14 }); // Use mathjs format for better handling
+      setResult(convertToBase(formattedResult, currentBase));
+    } catch (error) {
+      setResult('Error');
+    }
+  }, [input, currentBase]); // Recalculate when input or base changes
 
   const handleButtonClick = (value: string) => {
-    if (value === '=') {
-      try {
-        // Using eval is generally discouraged in production due to security risks,
-        // but for a simple personal calculator mini-app, it's the easiest way.
-        // For a public app, a safer expression parser would be needed.
-        setResult(eval(input).toString());
-      } catch (error) {
-        setResult('Error');
-      }
+    if (['DEC', 'BIN', 'HEX', 'OCT'].includes(value)) {
+      setCurrentBase(value as NumberBase);
+    } else if (value === '=') {
+       // When '=' is pressed, evaluate the input and set the result in the current base
+       try {
+         const calculatedResult = evaluate(input);
+         const formattedResult = format(calculatedResult, { precision: 14 });
+         setResult(convertToBase(formattedResult, currentBase));
+         setInput(formattedResult); // Set input to the calculated decimal result for further calculations
+       } catch (error) {
+         setResult('Error');
+         setInput(''); // Clear input on error
+       }
     } else if (value === 'C') {
       setInput('');
       setResult('');
     } else if (value === 'DEL') {
       setInput(input.slice(0, -1));
+      // Re-evaluate input after deleting a character
+      if (input.length > 1) {
+         try {
+            const calculatedResult = evaluate(input.slice(0, -1));
+            const formattedResult = format(calculatedResult, { precision: 14 });
+            setResult(convertToBase(formattedResult, currentBase));
+         } catch (error) {
+            setResult('Error');
+         }
+      } else {
+         setResult('');
+      }
     }
     else {
+      // Append value to input
       setInput(input + value);
     }
   };
 
-  const buttons = [
+  // Buttons for standard calculator layout
+  const standardButtons = [
     'C', 'DEL', '/', '*',
     '7', '8', '9', '-',
     '4', '5', '6', '+',
     '1', '2', '3', '=',
     '0', '.',
   ];
+
+  // Buttons for number base selection
+  const baseButtons: NumberBase[] = ['DEC', 'BIN', 'HEX', 'OCT'];
+
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -104,28 +179,44 @@ const Calculator = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 p-8 overflow-y-auto flex justify-center items-start"> {/* Center content horizontally */}
-        <Card className="w-full max-w-sm"> {/* Limit card width */}
+      <div className="flex-1 p-8 overflow-y-auto flex justify-center items-start">
+        <Card className="w-full max-w-sm">
           <CardHeader>
             <CardTitle className="text-center">Calculator</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Input
-              type="text"
-              value={result || input} // Show result if available, otherwise show input
-              readOnly
-              className="text-right text-2xl p-4 h-auto"
-            />
+             {/* Base Selection Buttons */}
             <div className="grid grid-cols-4 gap-2">
-              {buttons.map((btn) => (
+              {baseButtons.map((base) => (
+                <Button
+                  key={base}
+                  onClick={() => handleButtonClick(base)}
+                  variant={currentBase === base ? 'default' : 'outline'}
+                  className="text-sm p-2 h-auto"
+                >
+                  {base}
+                </Button>
+              ))}
+            </div>
+
+            {/* Display */}
+            <div className="text-right text-2xl p-4 h-auto bg-gray-100 rounded-md break-words">
+              <div className="text-sm text-gray-600">{input}</div> {/* Show input expression */}
+              <div>{result}</div> {/* Show result in current base */}
+            </div>
+
+
+            {/* Calculator Buttons */}
+            <div className="grid grid-cols-4 gap-2">
+              {standardButtons.map((btn) => (
                 <Button
                   key={btn}
                   onClick={() => handleButtonClick(btn)}
                   className={cn(
                     "text-lg p-4 h-auto",
-                    btn === '=' ? 'col-span-2 bg-blue-500 hover:bg-blue-600 text-white' : '', // Span 2 columns for equals
-                    btn === 'C' || btn === 'DEL' ? 'bg-red-500 hover:bg-red-600 text-white' : '', // Red for clear/delete
-                    ['/', '*', '-', '+'].includes(btn) ? 'bg-gray-300 hover:bg-gray-400 text-gray-800' : '' // Gray for operators
+                    btn === '=' ? 'col-span-2 bg-blue-500 hover:bg-blue-600 text-white' : '',
+                    btn === 'C' || btn === 'DEL' ? 'bg-red-500 hover:bg-red-600 text-white' : '',
+                    ['/', '*', '-', '+'].includes(btn) ? 'bg-gray-300 hover:bg-gray-400 text-gray-800' : ''
                   )}
                 >
                   {btn}
