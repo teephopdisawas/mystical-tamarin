@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Button, buttonVariants } from '@/components/ui/button'; // Import Button and buttonVariants
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,8 +9,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Link } from 'react-router-dom'; // Import Link
-import { cn } from '@/lib/utils'; // Import cn utility
+import { Link } from 'react-router-dom';
+import { cn } from '@/lib/utils';
+import { Trash2 } from 'lucide-react'; // Import Trash2 icon
 
 // Define the schema for the new note form
 const noteFormSchema = z.object({
@@ -110,6 +111,32 @@ const Notes = () => {
     }
   }
 
+  // Handle note deletion
+  const handleDeleteNote = async (noteId: string) => {
+    if (!user) {
+      showError('You must be logged in to delete notes.');
+      return;
+    }
+
+    // Optional: Add a confirmation dialog here before deleting
+
+    const { error } = await supabase
+      .from('notes')
+      .delete()
+      .eq('id', noteId)
+      .eq('user_id', user.id); // Ensure user can only delete their own notes
+
+    if (error) {
+      console.error('Error deleting note:', error);
+      showError('Failed to delete note.');
+    } else {
+      showSuccess('Note deleted successfully!');
+      // Remove the deleted note from the state
+      setNotes(notes.filter(note => note.id !== noteId));
+    }
+  };
+
+
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading notes...</div>;
   }
@@ -202,8 +229,16 @@ const Notes = () => {
           ) : (
             notes.map((note) => (
               <Card key={note.id}>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between"> {/* Added flex for title and button */}
                   <CardTitle>{note.title}</CardTitle>
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    onClick={() => handleDeleteNote(note.id)}
+                    aria-label="Delete note"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   <p>{note.content}</p>
