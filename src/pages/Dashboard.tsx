@@ -126,6 +126,7 @@ const Dashboard = () => {
         <h3 className="text-lg font-semibold mb-4">Mini Apps</h3>
         <ul className="flex-grow">
           <li className="mb-2"><a href="/dashboard" className="text-blue-600 hover:underline">Dashboard</a></li>
+          <li className="mb-2"><a href="/notes" className="text-blue-600 hover:underline">Notes</a></li> {/* Added Notes link */}
           {/* Add links for future mini-apps here */}
           {/* <li className="mb-2"><a href="/mini-app-1" className="text-blue-600 hover:underline">Mini App 1</a></li> */}
           {/* <li className="mb-2"><a href="/mini-app-2" className="text-blue-600 hover:underline">Mini App 2</a></li> */}
