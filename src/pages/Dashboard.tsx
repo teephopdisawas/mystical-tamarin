@@ -148,6 +148,17 @@ const Dashboard = () => {
               Notes
             </Link>
           </li>
+           <li>
+            <Link
+              to="/gallery"
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "w-full justify-start"
+              )}
+            >
+              Gallery
+            </Link>
+          </li>
           {/* Add links for future mini-apps here */}
         </ul>
         <div className="mt-auto">
