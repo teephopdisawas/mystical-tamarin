@@ -25,7 +25,7 @@ interface Message {
   user_id: string;
   content: string;
   created_at: string;
-  // profiles?: { first_name: string | null; last_name: string | null } | null; // Removed for now
+  profiles?: { first_name: string | null; last_name: string | null } | null; // Removed for now
 }
 
 const Messaging = () => {
@@ -193,6 +193,17 @@ const Messaging = () => {
               )}
             >
               Messaging
+            </Link>
+          </li>
+           <li>
+            <Link
+              to="/calculator"
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "w-full justify-start"
+              )}
+            >
+              Calculator
             </Link>
           </li>
           {/* Add links for future mini-apps here */}

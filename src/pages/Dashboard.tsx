@@ -170,6 +170,17 @@ const Dashboard = () => {
               Messaging
             </Link>
           </li>
+           <li>
+            <Link
+              to="/calculator"
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "w-full justify-start"
+              )}
+            >
+              Calculator
+            </Link>
+          </li>
           {/* Add links for future mini-apps here */}
         </ul>
         <div className="mt-auto">
