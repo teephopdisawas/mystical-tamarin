@@ -112,6 +112,11 @@ const Calculator = () => {
   // Buttons for number base selection
   const baseButtons: NumberBase[] = ['DEC', 'BIN', 'HEX', 'OCT'];
 
+  // Buttons for scientific functions
+  const scientificButtons = [
+    'sqrt(', 'sin(', 'cos(', 'tan(',
+  ];
+
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -203,6 +208,19 @@ const Calculator = () => {
             <div className="text-right text-2xl p-4 h-auto bg-gray-100 rounded-md break-words">
               <div className="text-sm text-gray-600">{input}</div> {/* Show input expression */}
               <div>{result}</div> {/* Show result in current base */}
+            </div>
+
+            {/* Scientific Buttons */}
+             <div className="grid grid-cols-4 gap-2">
+              {scientificButtons.map((btn) => (
+                <Button
+                  key={btn}
+                  onClick={() => handleButtonClick(btn)}
+                  className="text-lg p-4 h-auto bg-gray-200 hover:bg-gray-300 text-gray-800"
+                >
+                  {btn}
+                </Button>
+              ))}
             </div>
 
 
