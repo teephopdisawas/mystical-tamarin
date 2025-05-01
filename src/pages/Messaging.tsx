@@ -105,7 +105,7 @@ const Messaging = () => {
 
   // Auto-scroll to the latest message when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollViaw({ behavior: "smooth" });
   }, [messages]);
 
 
@@ -204,6 +204,17 @@ const Messaging = () => {
               )}
             >
               Calculator
+            </Link>
+          </li>
+           <li>
+            <Link
+              to="/todo"
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "w-full justify-start"
+              )}
+            >
+              To-Do List
             </Link>
           </li>
           {/* Add links for future mini-apps here */}

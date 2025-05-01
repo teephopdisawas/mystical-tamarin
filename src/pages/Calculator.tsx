@@ -179,6 +179,17 @@ const Calculator = () => {
               Calculator
             </Link>
           </li>
+           <li>
+            <Link
+              to="/todo"
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "w-full justify-start"
+              )}
+            >
+              To-Do List
+            </Link>
+          </li>
           {/* Add links for future mini-apps here */}
         </ul>
       </div>

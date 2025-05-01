@@ -209,6 +209,17 @@ const Gallery = () => {
               Calculator
             </Link>
           </li>
+           <li>
+            <Link
+              to="/todo"
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "w-full justify-start"
+              )}
+            >
+              To-Do List
+            </Link>
+          </li>
           {/* Add links for future mini-apps here */}
         </ul>
         {/* Logout button can be added here or in a shared layout */}
