@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button'; // Import Button
-import { useNavigate } from 'react-router-dom';
+import { Button, buttonVariants } from '@/components/ui/button'; // Import Button and buttonVariants
+import { useNavigate, Link } from 'react-router-dom'; // Import Link
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,6 +8,7 @@ import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { showSuccess, showError } from '@/utils/toast';
+import { cn } from '@/lib/utils'; // Import cn utility
 
 // Define the schema for the profile update form
 const profileFormSchema = z.object({
@@ -126,14 +127,26 @@ const Dashboard = () => {
         <h3 className="text-lg font-semibold mb-4">Mini Apps</h3>
         <ul className="flex-grow space-y-2"> {/* Added space-y for spacing between buttons */}
           <li>
-            <Button variant="ghost" className="w-full justify-start" asChild> {/* Use Button with asChild */}
-              <a href="/dashboard">Dashboard</a>
-            </Button>
+            <Link
+              to="/dashboard"
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "w-full justify-start"
+              )}
+            >
+              Dashboard
+            </Link>
           </li>
           <li>
-            <Button variant="ghost" className="w-full justify-start" asChild> {/* Use Button with asChild */}
-              <a href="/notes">Notes</a>
-            </Button>
+            <Link
+              to="/notes"
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "w-full justify-start"
+              )}
+            >
+              Notes
+            </Link>
           </li>
           {/* Add links for future mini-apps here */}
         </ul>
