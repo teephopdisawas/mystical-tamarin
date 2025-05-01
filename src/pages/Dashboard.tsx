@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button'; // Import Button
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -121,15 +121,21 @@ const Dashboard = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-      {/* Sidebar Placeholder */}
+      {/* Sidebar */}
       <div className="w-64 bg-white shadow-md p-4 flex flex-col">
         <h3 className="text-lg font-semibold mb-4">Mini Apps</h3>
-        <ul className="flex-grow">
-          <li className="mb-2"><a href="/dashboard" className="text-blue-600 hover:underline">Dashboard</a></li>
-          <li className="mb-2"><a href="/notes" className="text-blue-600 hover:underline">Notes</a></li> {/* Added Notes link */}
+        <ul className="flex-grow space-y-2"> {/* Added space-y for spacing between buttons */}
+          <li>
+            <Button variant="ghost" className="w-full justify-start" asChild> {/* Use Button with asChild */}
+              <a href="/dashboard">Dashboard</a>
+            </Button>
+          </li>
+          <li>
+            <Button variant="ghost" className="w-full justify-start" asChild> {/* Use Button with asChild */}
+              <a href="/notes">Notes</a>
+            </Button>
+          </li>
           {/* Add links for future mini-apps here */}
-          {/* <li className="mb-2"><a href="/mini-app-1" className="text-blue-600 hover:underline">Mini App 1</a></li> */}
-          {/* <li className="mb-2"><a href="/mini-app-2" className="text-blue-600 hover:underline">Mini App 2</a></li> */}
         </ul>
         <div className="mt-auto">
            <Button onClick={handleLogout} className="w-full">Logout</Button>
