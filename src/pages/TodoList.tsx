@@ -10,11 +10,16 @@ import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Trash2, CheckCircle, Circle } from 'lucide-react'; // Import icons
+import { Trash2, CheckCircle, Circle, Edit, CalendarIcon } from 'lucide-react'; // Import icons
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"; // Import Dialog components
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"; // Import Popover for date picker
+import { Calendar } from "@/components/ui/calendar"; // Import Calendar component
+import { format } from "date-fns"; // Import format from date-fns
 
-// Define the schema for the new todo form
+// Define the schema for the todo form (used for both create and edit)
 const todoFormSchema = z.object({
   task: z.string().min(1, { message: "Task cannot be empty." }),
+  due_date: z.date().nullable().optional(), // Add due_date as optional Date or null
 });
 
 type TodoFormValues = z.infer<typeof todoFormSchema>;
@@ -25,18 +30,34 @@ interface Todo {
   task: string;
   is_completed: boolean;
   created_at: string;
+  due_date: string | null; // Supabase returns date as string
 }
 
 const TodoList = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [editingTodo, setEditingTodo] = useState<Todo | null>(null); // State to hold the todo being edited
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false); // State to control the edit dialog
 
   const form = useForm<TodoFormValues>({
     resolver: zodResolver(todoFormSchema),
     defaultValues: {
       task: '',
+      due_date: undefined, // Use undefined for initial state of optional date
     },
+  });
+
+  const editForm = useForm<TodoFormValues>({
+    resolver: zodResolver(todoFormSchema),
+    defaultValues: {
+      task: '',
+      due_date: undefined,
+    },
+    values: editingTodo ? {
+      task: editingTodo.task,
+      due_date: editingTodo.due_date ? new Date(editingTodo.due_date) : undefined, // Convert string date to Date object
+    } : undefined, // Populate edit form when editingTodo changes
   });
 
   // Fetch user and todos on component mount
@@ -93,6 +114,7 @@ const TodoList = () => {
         {
           user_id: user.id,
           task: values.task,
+          due_date: values.due_date ? format(values.due_date, 'yyyy-MM-dd') : null, // Format date for Supabase
         },
       ])
       .select() // Select the inserted row to get its data
@@ -158,6 +180,49 @@ const TodoList = () => {
     }
   };
 
+  // Open edit dialog and set the todo to be edited
+  const handleEditClick = (todo: Todo) => {
+    setEditingTodo(todo);
+    setIsEditDialogOpen(true);
+  };
+
+  // Handle edit form submission
+  async function onEditSubmit(values: TodoFormValues) {
+    if (!user || !editingTodo) {
+      showError('Cannot update todo.');
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('todos')
+      .update({
+        task: values.task,
+        due_date: values.due_date ? format(values.due_date, 'yyyy-MM-dd') : null, // Format date for Supabase
+      })
+      .eq('id', editingTodo.id)
+      .eq('user_id', user.id) // Ensure user can only update their own todos
+      .select() // Select the updated row
+      .single(); // Expecting a single row back
+
+    if (error) {
+      console.error('Error updating todo:', error);
+      showError('Failed to update todo.');
+    } else if (data) {
+      showSuccess('Todo updated successfully!');
+      // Update the todo in the state
+      setTodos(todos.map(t => t.id === data.id ? data : t));
+      setIsEditDialogOpen(false); // Close the dialog
+      setEditingTodo(null); // Clear the editing todo state
+    }
+  }
+
+  // Close edit dialog and clear editing state
+  const handleEditDialogClose = () => {
+    setIsEditDialogOpen(false);
+    setEditingTodo(null);
+    editForm.reset(); // Reset the edit form
+  };
+
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading todos...</div>;
@@ -173,7 +238,7 @@ const TodoList = () => {
       {/* Sidebar */}
       <div className="w-64 bg-white shadow-md p-4 flex flex-col">
         <h3 className="text-lg font-semibold mb-4">Mini Apps</h3>
-        <ul className="flex-grow space-y-2">
+        <ul className="flex-grow space-y-2"> {/* Added space-y for spacing between buttons */}
           <li>
             <Link
               to="/dashboard"
@@ -270,6 +335,44 @@ const TodoList = () => {
                   </FormItem>
                 )}
               />
+               <FormField
+                control={form.control}
+                name="due_date"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Due Date (Optional)</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value || undefined} // Handle null/undefined
+                          onSelect={field.onChange}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <Button type="submit" className="w-full">Add Task</Button>
             </form>
           </Form>
@@ -283,7 +386,7 @@ const TodoList = () => {
             todos.map((todo) => (
               <Card key={todo.id}>
                 <CardContent className="flex items-center justify-between p-4">
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-3 flex-grow"> {/* Added flex-grow */}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -296,23 +399,109 @@ const TodoList = () => {
                         <Circle className="h-5 w-5 text-gray-500" />
                       )}
                     </Button>
-                    <span className={cn(todo.is_completed ? 'line-through text-gray-500' : '')}>
-                      {todo.task}
-                    </span>
+                    <div className="flex flex-col"> {/* Container for task and date */}
+                       <span className={cn(todo.is_completed ? 'line-through text-gray-500' : '')}>
+                         {todo.task}
+                       </span>
+                       {todo.due_date && (
+                         <span className="text-xs text-gray-500 mt-1">
+                           Due: {format(new Date(todo.due_date), 'PPP')} {/* Display formatted date */}
+                         </span>
+                       )}
+                    </div>
                   </div>
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    onClick={() => handleDeleteTodo(todo.id)}
-                    aria-label="Delete todo"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex space-x-2 flex-shrink-0"> {/* Container for buttons */}
+                     <Button
+                       variant="outline" // Use outline variant for edit
+                       size="icon"
+                       onClick={() => handleEditClick(todo)} // Open edit dialog
+                       aria-label="Edit todo"
+                     >
+                       <Edit className="h-4 w-4" />
+                     </Button>
+                     <Button
+                       variant="destructive"
+                       size="icon"
+                       onClick={() => handleDeleteTodo(todo.id)}
+                       aria-label="Delete todo"
+                     >
+                       <Trash2 className="h-4 w-4" />
+                     </Button>
+                   </div>
                 </CardContent>
               </Card>
             ))
           )}
         </div>
+
+        {/* Edit Todo Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Edit To-Do</DialogTitle>
+            </DialogHeader>
+            <Form {...editForm}>
+              <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+                <FormField
+                  control={editForm.control}
+                  name="task"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Task</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Edit task..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={editForm.control}
+                  name="due_date"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Due Date (Optional)</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value || undefined} // Handle null/undefined
+                            onSelect={field.onChange}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={handleEditDialogClose}>Cancel</Button>
+                  <Button type="submit">Save Changes</Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+
       </div>
     </div>
   );
