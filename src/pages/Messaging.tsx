@@ -44,9 +44,13 @@ const Messaging = () => {
   // Function to fetch messages
   const fetchMessages = async () => {
     setLoading(true);
+    // Fetch messages and join with profiles to get sender name
+    // Note: If the join fails for historical messages due to RLS or data issues,
+    // the 'profiles' field might be null for those messages. New messages
+    // received via subscription should include profile data if the join works.
     const { data, error } = await supabase
       .from('messages')
-      .select('*') // Fetch only message fields for now
+      .select('*, profiles(first_name, last_name)')
       .order('created_at', { ascending: true }) // Order by timestamp
       .limit(50); // Limit the number of messages
 
@@ -79,7 +83,6 @@ const Messaging = () => {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async (payload) => {
         console.log('New message received!', payload);
         // Fetch the new message with profile data
-        // NOTE: This fetch still includes the join. We might need to adjust this too if the issue persists.
         const { data, error } = await supabase
           .from('messages')
           .select('*, profiles(first_name, last_name)')
@@ -140,6 +143,8 @@ const Messaging = () => {
      return <div className="flex items-center justify-center min-h-screen">Please log in to view messages.</div>;
   }
 
+  // Determine if the current user sent the message
+  const isCurrentUser = (messageUserId: string) => user && messageUserId === user.id;
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -209,15 +214,27 @@ const Messaging = () => {
             <p className="text-center text-gray-600">No messages yet. Send one below!</p>
           ) : (
             messages.map((message) => (
-              <div key={message.id} className="flex items-start space-x-3">
+              <div
+                key={message.id}
+                className={cn(
+                  "flex items-start space-x-3",
+                  isCurrentUser(message.user_id) ? "justify-end" : "justify-start" // Align right for current user
+                )}
+              >
                 {/* Could add avatar here */}
-                <div>
-                  {/* Temporarily hide sender name */}
-                  {/* <p className="text-sm font-semibold text-gray-900">
-                    {message.profiles?.first_name || message.profiles?.last_name || 'Anonymous'}
-                  </p> */}
-                  <p className="text-gray-800">{message.content}</p>
-                  <p className="text-xs text-gray-500 mt-1">
+                <div
+                  className={cn(
+                    "max-w-xs p-3 rounded-lg", // Basic bubble styling
+                    isCurrentUser(message.user_id)
+                      ? "bg-blue-500 text-white" // Blue background for current user
+                      : "bg-gray-300 text-gray-800" // Gray background for others
+                  )}
+                >
+                  <p className="text-sm font-semibold mb-1">
+                    {message.profiles?.first_name || message.profiles?.last_name || 'Anonymous'} {/* Display sender name */}
+                  </p>
+                  <p>{message.content}</p>
+                  <p className="text-xs mt-1 opacity-75"> {/* Dim timestamp slightly */}
                     {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
