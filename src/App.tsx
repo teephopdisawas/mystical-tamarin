@@ -7,7 +7,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login"; // Import Login page
 import Dashboard from "./pages/Dashboard"; // Import Dashboard page
-import { SessionContextProvider } from '@supabase/auth-ui-react'; // Attempting direct import
+import { SessionContextProvider } from '@supabase/auth-helpers-react'; // Correct package for SessionContextProvider
 import { supabase } from '@/integrations/supabase/client'; // Import supabase client
 
 const queryClient = new QueryClient();
