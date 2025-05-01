@@ -46,7 +46,7 @@ const Messaging = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('messages')
-      .select('*, profiles(first_name, last_name)') // Select messages and join with profiles to get sender name
+      .select('*') // Fetch only message fields for now
       .order('created_at', { ascending: true }) // Order by timestamp
       .limit(50); // Limit the number of messages
 
@@ -79,6 +79,7 @@ const Messaging = () => {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async (payload) => {
         console.log('New message received!', payload);
         // Fetch the new message with profile data
+        // NOTE: This fetch still includes the join. We might need to adjust this too if the issue persists.
         const { data, error } = await supabase
           .from('messages')
           .select('*, profiles(first_name, last_name)')
@@ -211,9 +212,10 @@ const Messaging = () => {
               <div key={message.id} className="flex items-start space-x-3">
                 {/* Could add avatar here */}
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">
-                    {message.profiles?.first_name || message.profiles?.last_name || 'Anonymous'} {/* Display sender name or 'Anonymous' */}
-                  </p>
+                  {/* Temporarily hide sender name */}
+                  {/* <p className="text-sm font-semibold text-gray-900">
+                    {message.profiles?.first_name || message.profiles?.last_name || 'Anonymous'}
+                  </p> */}
                   <p className="text-gray-800">{message.content}</p>
                   <p className="text-xs text-gray-500 mt-1">
                     {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
