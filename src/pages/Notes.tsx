@@ -11,9 +11,10 @@ import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Trash2 } from 'lucide-react'; // Import Trash2 icon
+import { Trash2, Edit } from 'lucide-react'; // Import Trash2 and Edit icons
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"; // Import Dialog components
 
-// Define the schema for the new note form
+// Define the schema for the note form (used for both create and edit)
 const noteFormSchema = z.object({
   title: z.string().min(1, { message: "Title is required." }),
   content: z.string().optional(),
@@ -23,6 +24,7 @@ type NoteFormValues = z.infer<typeof noteFormSchema>;
 
 interface Note {
   id: string;
+  user_id: string; // Added user_id for clarity, though not strictly needed for display
   title: string;
   content: string | null;
   created_at: string;
@@ -32,6 +34,8 @@ const Notes = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [editingNote, setEditingNote] = useState<Note | null>(null); // State to hold the note being edited
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false); // State to control the edit dialog
 
   const form = useForm<NoteFormValues>({
     resolver: zodResolver(noteFormSchema),
@@ -39,6 +43,15 @@ const Notes = () => {
       title: '',
       content: '',
     },
+  });
+
+  const editForm = useForm<NoteFormValues>({
+    resolver: zodResolver(noteFormSchema),
+    defaultValues: {
+      title: '',
+      content: '',
+    },
+    values: editingNote ? { title: editingNote.title, content: editingNote.content || '' } : undefined, // Populate edit form when editingNote changes
   });
 
   // Fetch user and notes on component mount
@@ -118,22 +131,65 @@ const Notes = () => {
       return;
     }
 
-    // Optional: Add a confirmation dialog here before deleting
+    if (window.confirm('Are you sure you want to delete this note?')) { // Simple confirmation
+      const { error } = await supabase
+        .from('notes')
+        .delete()
+        .eq('id', noteId)
+        .eq('user_id', user.id); // Ensure user can only delete their own notes
 
-    const { error } = await supabase
+      if (error) {
+        console.error('Error deleting note:', error);
+        showError('Failed to delete note.');
+      } else {
+        showSuccess('Note deleted successfully!');
+        // Remove the deleted note from the state
+        setNotes(notes.filter(note => note.id !== noteId));
+      }
+    }
+  };
+
+  // Open edit dialog and set the note to be edited
+  const handleEditClick = (note: Note) => {
+    setEditingNote(note);
+    setIsEditDialogOpen(true);
+  };
+
+  // Handle edit form submission
+  async function onEditSubmit(values: NoteFormValues) {
+    if (!user || !editingNote) {
+      showError('Cannot update note.');
+      return;
+    }
+
+    const { data, error } = await supabase
       .from('notes')
-      .delete()
-      .eq('id', noteId)
-      .eq('user_id', user.id); // Ensure user can only delete their own notes
+      .update({
+        title: values.title,
+        content: values.content,
+      })
+      .eq('id', editingNote.id)
+      .eq('user_id', user.id) // Ensure user can only update their own notes
+      .select() // Select the updated row
+      .single(); // Expecting a single row back
 
     if (error) {
-      console.error('Error deleting note:', error);
-      showError('Failed to delete note.');
-    } else {
-      showSuccess('Note deleted successfully!');
-      // Remove the deleted note from the state
-      setNotes(notes.filter(note => note.id !== noteId));
+      console.error('Error updating note:', error);
+      showError('Failed to update note.');
+    } else if (data) {
+      showSuccess('Note updated successfully!');
+      // Update the note in the state
+      setNotes(notes.map(note => note.id === data.id ? data : note));
+      setIsEditDialogOpen(false); // Close the dialog
+      setEditingNote(null); // Clear the editing note state
     }
+  }
+
+  // Close edit dialog and clear editing state
+  const handleEditDialogClose = () => {
+    setIsEditDialogOpen(false);
+    setEditingNote(null);
+    editForm.reset(); // Reset the edit form
   };
 
 
@@ -229,16 +285,26 @@ const Notes = () => {
           ) : (
             notes.map((note) => (
               <Card key={note.id}>
-                <CardHeader className="flex flex-row items-center justify-between"> {/* Added flex for title and button */}
+                <CardHeader className="flex flex-row items-center justify-between"> {/* Added flex for title and buttons */}
                   <CardTitle>{note.title}</CardTitle>
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    onClick={() => handleDeleteNote(note.id)}
-                    aria-label="Delete note"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex space-x-2"> {/* Container for buttons */}
+                    <Button
+                      variant="outline" // Use outline variant for edit
+                      size="icon"
+                      onClick={() => handleEditClick(note)} // Open edit dialog
+                      aria-label="Edit note"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => handleDeleteNote(note.id)}
+                      aria-label="Delete note"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <p>{note.content}</p>
@@ -248,6 +314,50 @@ const Notes = () => {
             ))
           )}
         </div>
+
+        {/* Edit Note Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Edit Note</DialogTitle>
+            </DialogHeader>
+            <Form {...editForm}>
+              <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+                <FormField
+                  control={editForm.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Title</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Note Title" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editForm.control}
+                  name="content"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Content (Optional)</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Note content..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={handleEditDialogClose}>Cancel</Button>
+                  <Button type="submit">Save Changes</Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+
       </div>
     </div>
   );
