@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"; // Import Popover for date picker
 import { Calendar } from "@/components/ui/calendar"; // Import Calendar component
 import { format } from "date-fns"; // Import format from date-fns
+import { User } from '@supabase/supabase-js';
 
 // Define the schema for the todo form (used for both create and edit)
 const todoFormSchema = z.object({
@@ -36,7 +37,7 @@ interface Todo {
 const TodoList = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null); // State to hold the todo being edited
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false); // State to control the edit dialog
 

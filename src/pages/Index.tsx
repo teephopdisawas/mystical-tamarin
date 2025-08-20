@@ -1,14 +1,34 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSession } from "@supabase/auth-helpers-react"; // Import useSession
+import { supabase } from "@/integrations/supabase/client";
+import type { Session } from "@supabase/supabase-js";
 
 const Index = () => {
   const navigate = useNavigate();
-  const session = useSession(); // Get the user session
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if session is defined (meaning the auth state has been loaded)
-    if (session !== undefined) {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    // Only redirect when we have finished loading
+    if (!loading) {
       if (session) {
         // User is logged in, redirect to dashboard
         console.log("User is logged in, redirecting to dashboard.");
@@ -19,7 +39,7 @@ const Index = () => {
         navigate("/login");
       }
     }
-  }, [session, navigate]); // Depend on session and navigate
+  }, [session, loading, navigate]);
 
   // You can return a loading indicator or null while the check happens
   return (
