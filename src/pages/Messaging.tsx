@@ -12,6 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from "@/component
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Send } from 'lucide-react'; // Import Send icon
+import { User } from '@supabase/supabase-js';
 
 // Define the schema for the new message form
 const messageFormSchema = z.object({
@@ -31,7 +32,7 @@ interface Message {
 const Messaging = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null); // Ref for auto-scrolling
 
   const form = useForm<MessageFormValues>({
@@ -105,7 +106,7 @@ const Messaging = () => {
 
   // Auto-scroll to the latest message when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollViaw({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
 

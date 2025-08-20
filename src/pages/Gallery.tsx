@@ -7,6 +7,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Upload, Trash2 } from 'lucide-react'; // Import icons
+import { User } from '@supabase/supabase-js';
 
 interface ImageObject {
   name: string;
@@ -14,14 +15,14 @@ interface ImageObject {
   created_at: string;
   updated_at: string;
   last_accessed_at: string;
-  metadata: any;
+  metadata: Record<string, unknown>;
   // Add other properties if needed
 }
 
 const Gallery = () => {
   const [images, setImages] = useState<ImageObject[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [uploading, setUploading] = useState(false);
 
   // Function to fetch images for the logged-in user

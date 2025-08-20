@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from '@/lib/utils'; // Import cn utility
+import { User } from '@supabase/supabase-js';
 
 // Define the schema for the profile update form
 const profileFormSchema = z.object({
@@ -20,7 +21,7 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<{ first_name: string | null; last_name: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
 

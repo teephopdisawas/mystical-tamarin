@@ -13,6 +13,7 @@ import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Trash2, Edit } from 'lucide-react'; // Import Trash2 and Edit icons
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"; // Import Dialog components
+import { User } from '@supabase/supabase-js';
 
 // Define the schema for the note form (used for both create and edit)
 const noteFormSchema = z.object({
@@ -33,7 +34,7 @@ interface Note {
 const Notes = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [editingNote, setEditingNote] = useState<Note | null>(null); // State to hold the note being edited
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false); // State to control the edit dialog
 
