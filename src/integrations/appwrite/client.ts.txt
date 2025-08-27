@@ -1,0 +1,4 @@
+const client = new Client();
+client
+    .setEndpoint('https://syd.cloud.appwrite.io/v1')
+    .setProject('682ea5a9001e8eedb1ac');
