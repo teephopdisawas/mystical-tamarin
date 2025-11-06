@@ -1,79 +1,56 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { account, storage } from '@/integrations/appwrite/client';
+import { appwriteConfig } from '@/integrations/appwrite/config';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { showSuccess, showError } from '@/utils/toast';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Upload, Trash2 } from 'lucide-react'; // Import icons
-import { User } from '@supabase/supabase-js';
+import { Upload, Trash2 } from 'lucide-react';
+import { ID, Models } from 'appwrite';
 
-interface ImageObject {
+interface ImageFile {
+  $id: string;
   name: string;
-  id: string; // Supabase object ID
-  created_at: string;
-  updated_at: string;
-  last_accessed_at: string;
-  metadata: Record<string, unknown>;
-  // Add other properties if needed
+  $createdAt: string;
 }
 
 const Gallery = () => {
-  const [images, setImages] = useState<ImageObject[]>([]);
+  const [images, setImages] = useState<ImageFile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<Models.User<Models.Preferences> | null>(null);
   const [uploading, setUploading] = useState(false);
 
   // Function to fetch images for the logged-in user
-  const fetchImages = async (userId: string) => {
+  const fetchImages = async () => {
     setLoading(true);
-    const { data, error } = await supabase.storage
-      .from('images')
-      .list(`${userId}/`, { // List objects within the user's folder
-        limit: 100, // Adjust limit as needed
-        offset: 0,
-        sortBy: { column: 'created_at', order: 'desc' },
-      });
-
-    if (error) {
+    try {
+      const response = await storage.listFiles(appwriteConfig.buckets.images);
+      setImages(response.files as unknown as ImageFile[]);
+    } catch (error: any) {
       console.error('Error fetching images:', error);
       showError('Failed to load images.');
-      setImages([]); // Clear images on error
-    } else if (data) {
-      // Filter out any potential directory entries if necessary (list can return folders)
-      const imageFiles = data.filter(item => item.id !== null);
-      setImages(imageFiles);
+      setImages([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      if (user) {
-        fetchImages(user.id);
-      } else {
-        setLoading(false); // Stop loading if no user
+      try {
+        const currentUser = await account.get();
+        setUser(currentUser);
+        await fetchImages();
+      } catch (error) {
+        setUser(null);
+        setLoading(false);
       }
     };
 
     fetchUser();
-
-    // Listen for auth state changes (e.g., logout) - optional, but good practice
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
-        setUser(null);
-        setImages([]); // Clear images on logout
-      } else {
-        setUser(session.user);
-        fetchImages(session.user.id); // Re-fetch images on login
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []); // Empty dependency array means this runs once on mount
+  }, []);
 
   // Handle file upload
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,61 +60,64 @@ const Gallery = () => {
     }
 
     const file = event.target.files[0];
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`; // Generate a unique file name
-    const filePath = `${user.id}/${fileName}`; // Store in user's folder
-
     setUploading(true);
 
-    const { error } = await supabase.storage
-      .from('images')
-      .upload(filePath, file);
+    try {
+      await storage.createFile(
+        appwriteConfig.buckets.images,
+        ID.unique(),
+        file
+      );
 
-    if (error) {
+      showSuccess('Image uploaded successfully!');
+      await fetchImages();
+    } catch (error: any) {
       console.error('Error uploading image:', error);
       showError('Failed to upload image.');
-    } else {
-      showSuccess('Image uploaded successfully!');
-      // Re-fetch images to update the list
-      fetchImages(user.id);
+    } finally {
+      setUploading(false);
+      event.target.value = '';
     }
-
-    setUploading(false);
-    // Clear the file input value so the same file can be uploaded again if needed
-    event.target.value = '';
   };
 
   // Handle image deletion
-  const handleDeleteImage = async (imageName: string) => {
+  const handleDeleteImage = async (imageId: string) => {
     if (!user) {
       showError('You must be logged in to delete images.');
       return;
     }
 
     if (window.confirm('Are you sure you want to delete this image?')) {
-      const filePath = `${user.id}/${imageName}`; // Construct the full path
-
-      const { error } = await supabase.storage
-        .from('images')
-        .remove([filePath]); // Remove expects an array of file paths
-
-      if (error) {
+      try {
+        await storage.deleteFile(appwriteConfig.buckets.images, imageId);
+        showSuccess('Image deleted successfully!');
+        setImages(images.filter(image => image.$id !== imageId));
+      } catch (error: any) {
         console.error('Error deleting image:', error);
         showError('Failed to delete image.');
-      } else {
-        showSuccess('Image deleted successfully!');
-        // Remove the deleted image from the state
-        setImages(images.filter(image => image.name !== imageName));
       }
     }
   };
 
   // Function to get the public URL of an image
-  const getImageUrl = (imageName: string): string => {
-     if (!user) return ''; // Cannot get URL without user ID
-     const filePath = `${user.id}/${imageName}`;
-     const { data } = supabase.storage.from('images').getPublicUrl(filePath);
-     return data.publicUrl;
+  const getImageUrl = (fileId: string): string => {
+    if (!user) return '';
+    const result = storage.getFilePreview(
+      appwriteConfig.buckets.images,
+      fileId,
+      800, // width
+      600, // height
+      'center' as any, // gravity
+      100, // quality
+      0, // borderWidth
+      '', // borderColor
+      0, // borderRadius
+      1, // opacity
+      0, // rotation
+      '', // background
+      'webp' as any // output format
+    );
+    return result.href;
   };
 
 
@@ -248,10 +228,10 @@ const Gallery = () => {
             <p className="col-span-full text-center text-gray-600">No images yet. Upload one above!</p>
           ) : (
             images.map((image) => (
-              <Card key={image.id}>
+              <Card key={image.$id}>
                 <CardContent className="p-2">
                   <img
-                    src={getImageUrl(image.name)}
+                    src={getImageUrl(image.$id)}
                     alt={image.name}
                     className="w-full h-48 object-cover rounded-md mb-2"
                   />
@@ -260,9 +240,9 @@ const Gallery = () => {
                      <Button
                         variant="destructive"
                         size="icon"
-                        onClick={() => handleDeleteImage(image.name)}
+                        onClick={() => handleDeleteImage(image.$id)}
                         aria-label="Delete image"
-                        className="flex-shrink-0" // Prevent button from shrinking
+                        className="flex-shrink-0"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

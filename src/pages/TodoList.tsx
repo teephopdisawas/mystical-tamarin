@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { account, databases } from '@/integrations/appwrite/client';
+import { appwriteConfig } from '@/integrations/appwrite/config';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,12 +11,12 @@ import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Trash2, CheckCircle, Circle, Edit, CalendarIcon } from 'lucide-react'; // Import icons
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"; // Import Dialog components
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"; // Import Popover for date picker
-import { Calendar } from "@/components/ui/calendar"; // Import Calendar component
-import { format } from "date-fns"; // Import format from date-fns
-import { User } from '@supabase/supabase-js';
+import { Trash2, CheckCircle, Circle, Edit, CalendarIcon } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { ID, Query, Models } from 'appwrite';
 
 // Define the schema for the todo form (used for both create and edit)
 const todoFormSchema = z.object({
@@ -26,20 +27,20 @@ const todoFormSchema = z.object({
 type TodoFormValues = z.infer<typeof todoFormSchema>;
 
 interface Todo {
-  id: string;
+  $id: string;
   user_id: string;
   task: string;
   is_completed: boolean;
-  created_at: string;
-  due_date: string | null; // Supabase returns date as string
+  $createdAt: string;
+  due_date: string | null;
 }
 
 const TodoList = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
-  const [editingTodo, setEditingTodo] = useState<Todo | null>(null); // State to hold the todo being edited
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false); // State to control the edit dialog
+  const [user, setUser] = useState<Models.User<Models.Preferences> | null>(null);
+  const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const form = useForm<TodoFormValues>({
     resolver: zodResolver(todoFormSchema),
@@ -65,42 +66,32 @@ const TodoList = () => {
   useEffect(() => {
     const fetchUserAndTodos = async () => {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+      try {
+        const currentUser = await account.get();
+        setUser(currentUser);
 
-      if (user) {
-        const { data, error } = await supabase
-          .from('todos')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+        if (currentUser) {
+          const response = await databases.listDocuments(
+            appwriteConfig.databaseId,
+            appwriteConfig.collections.todos,
+            [
+              Query.equal('user_id', currentUser.$id),
+              Query.orderDesc('$createdAt')
+            ]
+          );
 
-        if (error) {
-          console.error('Error fetching todos:', error);
-          showError('Failed to load todos.');
-        } else if (data) {
-          setTodos(data);
+          setTodos(response.documents as unknown as Todo[]);
         }
+      } catch (error: any) {
+        console.error('Error fetching todos:', error);
+        showError('Failed to load todos.');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchUserAndTodos();
-
-    // Optional: Listen for real-time changes if needed later
-    // const subscription = supabase
-    //   .channel('todos')
-    //   .on('postgres_changes', { event: '*', schema: 'public', table: 'todos', filter: `user_id=eq.${user?.id}` }, payload => {
-    //     console.log('Change received!', payload);
-    //     // Handle real-time updates to todos list
-    //   })
-    //   .subscribe();
-
-    // return () => {
-    //   subscription.unsubscribe();
-    // };
-
-  }, []); // Empty dependency array means this runs once on mount
+  }, []);
 
   // Handle new todo submission
   async function onSubmit(values: TodoFormValues) {
@@ -109,25 +100,25 @@ const TodoList = () => {
       return;
     }
 
-    const { data, error } = await supabase
-      .from('todos')
-      .insert([
+    try {
+      const newTodo = await databases.createDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.collections.todos,
+        ID.unique(),
         {
-          user_id: user.id,
+          user_id: user.$id,
           task: values.task,
-          due_date: values.due_date ? format(values.due_date, 'yyyy-MM-dd') : null, // Format date for Supabase
-        },
-      ])
-      .select() // Select the inserted row to get its data
-      .single(); // Expecting a single row back
+          is_completed: false,
+          due_date: values.due_date ? format(values.due_date, 'yyyy-MM-dd') : null,
+        }
+      );
 
-    if (error) {
+      showSuccess('Todo created successfully!');
+      setTodos([newTodo as unknown as Todo, ...todos]);
+      form.reset();
+    } catch (error: any) {
       console.error('Error creating todo:', error);
       showError('Failed to create todo.');
-    } else if (data) {
-      showSuccess('Todo created successfully!');
-      setTodos([data, ...todos]); // Add the new todo to the top of the list
-      form.reset(); // Clear the form
     }
   }
 
@@ -138,20 +129,19 @@ const TodoList = () => {
       return;
     }
 
-    if (window.confirm('Are you sure you want to delete this todo?')) { // Simple confirmation
-      const { error } = await supabase
-        .from('todos')
-        .delete()
-        .eq('id', todoId)
-        .eq('user_id', user.id); // Ensure user can only delete their own todos
+    if (window.confirm('Are you sure you want to delete this todo?')) {
+      try {
+        await databases.deleteDocument(
+          appwriteConfig.databaseId,
+          appwriteConfig.collections.todos,
+          todoId
+        );
 
-      if (error) {
+        showSuccess('Todo deleted successfully!');
+        setTodos(todos.filter(todo => todo.$id !== todoId));
+      } catch (error: any) {
         console.error('Error deleting todo:', error);
         showError('Failed to delete todo.');
-      } else {
-        showSuccess('Todo deleted successfully!');
-        // Remove the deleted todo from the state
-        setTodos(todos.filter(todo => todo.id !== todoId));
       }
     }
   };
@@ -163,21 +153,19 @@ const TodoList = () => {
       return;
     }
 
-    const { data, error } = await supabase
-      .from('todos')
-      .update({ is_completed: !todo.is_completed })
-      .eq('id', todo.id)
-      .eq('user_id', user.id) // Ensure user can only update their own todos
-      .select() // Select the updated row
-      .single(); // Expecting a single row back
+    try {
+      const updatedTodo = await databases.updateDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.collections.todos,
+        todo.$id,
+        { is_completed: !todo.is_completed }
+      );
 
-    if (error) {
+      showSuccess(`Todo marked as ${updatedTodo.is_completed ? 'completed' : 'incomplete'}!`);
+      setTodos(todos.map(t => t.$id === updatedTodo.$id ? updatedTodo as unknown as Todo : t));
+    } catch (error: any) {
       console.error('Error updating todo:', error);
       showError('Failed to update todo.');
-    } else if (data) {
-      showSuccess(`Todo marked as ${data.is_completed ? 'completed' : 'incomplete'}!`);
-      // Update the todo in the state
-      setTodos(todos.map(t => t.id === data.id ? data : t));
     }
   };
 
@@ -194,26 +182,24 @@ const TodoList = () => {
       return;
     }
 
-    const { data, error } = await supabase
-      .from('todos')
-      .update({
-        task: values.task,
-        due_date: values.due_date ? format(values.due_date, 'yyyy-MM-dd') : null, // Format date for Supabase
-      })
-      .eq('id', editingTodo.id)
-      .eq('user_id', user.id) // Ensure user can only update their own todos
-      .select() // Select the updated row
-      .single(); // Expecting a single row back
+    try {
+      const updatedTodo = await databases.updateDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.collections.todos,
+        editingTodo.$id,
+        {
+          task: values.task,
+          due_date: values.due_date ? format(values.due_date, 'yyyy-MM-dd') : null,
+        }
+      );
 
-    if (error) {
+      showSuccess('Todo updated successfully!');
+      setTodos(todos.map(t => t.$id === updatedTodo.$id ? updatedTodo as unknown as Todo : t));
+      setIsEditDialogOpen(false);
+      setEditingTodo(null);
+    } catch (error: any) {
       console.error('Error updating todo:', error);
       showError('Failed to update todo.');
-    } else if (data) {
-      showSuccess('Todo updated successfully!');
-      // Update the todo in the state
-      setTodos(todos.map(t => t.id === data.id ? data : t));
-      setIsEditDialogOpen(false); // Close the dialog
-      setEditingTodo(null); // Clear the editing todo state
     }
   }
 
@@ -385,9 +371,9 @@ const TodoList = () => {
             <p className="text-center text-gray-600">No tasks yet. Add one above!</p>
           ) : (
             todos.map((todo) => (
-              <Card key={todo.id}>
+              <Card key={todo.$id}>
                 <CardContent className="flex items-center justify-between p-4">
-                  <div className="flex items-center space-x-3 flex-grow"> {/* Added flex-grow */}
+                  <div className="flex items-center space-x-3 flex-grow">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -400,22 +386,22 @@ const TodoList = () => {
                         <Circle className="h-5 w-5 text-gray-500" />
                       )}
                     </Button>
-                    <div className="flex flex-col"> {/* Container for task and date */}
+                    <div className="flex flex-col">
                        <span className={cn(todo.is_completed ? 'line-through text-gray-500' : '')}>
                          {todo.task}
                        </span>
                        {todo.due_date && (
                          <span className="text-xs text-gray-500 mt-1">
-                           Due: {format(new Date(todo.due_date), 'PPP')} {/* Display formatted date */}
+                           Due: {format(new Date(todo.due_date), 'PPP')}
                          </span>
                        )}
                     </div>
                   </div>
-                  <div className="flex space-x-2 flex-shrink-0"> {/* Container for buttons */}
+                  <div className="flex space-x-2 flex-shrink-0">
                      <Button
-                       variant="outline" // Use outline variant for edit
+                       variant="outline"
                        size="icon"
-                       onClick={() => handleEditClick(todo)} // Open edit dialog
+                       onClick={() => handleEditClick(todo)}
                        aria-label="Edit todo"
                      >
                        <Edit className="h-4 w-4" />
@@ -423,7 +409,7 @@ const TodoList = () => {
                      <Button
                        variant="destructive"
                        size="icon"
-                       onClick={() => handleDeleteTodo(todo.id)}
+                       onClick={() => handleDeleteTodo(todo.$id)}
                        aria-label="Delete todo"
                      >
                        <Trash2 className="h-4 w-4" />

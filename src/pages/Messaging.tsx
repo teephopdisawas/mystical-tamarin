@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { account, databases, client } from '@/integrations/appwrite/client';
+import { appwriteConfig } from '@/integrations/appwrite/config';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,8 +12,8 @@ import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Send } from 'lucide-react'; // Import Send icon
-import { User } from '@supabase/supabase-js';
+import { Send } from 'lucide-react';
+import { ID, Query, Models } from 'appwrite';
 
 // Define the schema for the new message form
 const messageFormSchema = z.object({
@@ -22,18 +23,17 @@ const messageFormSchema = z.object({
 type MessageFormValues = z.infer<typeof messageFormSchema>;
 
 interface Message {
-  id: string;
+  $id: string;
   user_id: string;
   content: string;
-  created_at: string;
-  profiles?: { first_name: string | null; last_name: string | null } | null; // Removed for now
+  $createdAt: string;
 }
 
 const Messaging = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null); // Ref for auto-scrolling
+  const [user, setUser] = useState<Models.User<Models.Preferences> | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<MessageFormValues>({
     resolver: zodResolver(messageFormSchema),
@@ -45,64 +45,59 @@ const Messaging = () => {
   // Function to fetch messages
   const fetchMessages = async () => {
     setLoading(true);
-    // Fetch only message fields for now
-    const { data, error } = await supabase
-      .from('messages')
-      .select('id, user_id, content, created_at') // Select specific fields
-      .order('created_at', { ascending: true }) // Order by timestamp
-      .limit(50); // Limit the number of messages
+    try {
+      const response = await databases.listDocuments(
+        appwriteConfig.databaseId,
+        appwriteConfig.collections.messages,
+        [
+          Query.orderAsc('$createdAt'),
+          Query.limit(50)
+        ]
+      );
 
-    if (error) {
+      setMessages(response.documents as unknown as Message[]);
+    } catch (error: any) {
       console.error('Error fetching messages:', error);
       showError('Failed to load messages.');
-    } else if (data) {
-      console.log('Fetched messages:', data); // Log fetched data
-      setMessages(data);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // Fetch user and initial messages on component mount
   useEffect(() => {
     const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      if (user) {
-        fetchMessages();
-      } else {
-        setLoading(false); // Stop loading if no user
+      try {
+        const currentUser = await account.get();
+        setUser(currentUser);
+        await fetchMessages();
+      } catch (error) {
+        setUser(null);
+        setLoading(false);
       }
     };
 
     fetchUser();
 
     // Set up real-time subscription for new messages
-    const subscription = supabase
-      .channel('public:messages') // Channel name
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async (payload) => {
-        console.log('New message received!', payload);
-        // Fetch the new message without profile data for now
-        const { data, error } = await supabase
-          .from('messages')
-          .select('id, user_id, content, created_at') // Select specific fields
-          .eq('id', payload.new.id)
-          .single();
+    const unsubscribe = client.subscribe(
+      `databases.${appwriteConfig.databaseId}.collections.${appwriteConfig.collections.messages}.documents`,
+      (response: any) => {
+        console.log('Real-time event:', response);
 
-        if (error) {
-          console.error('Error fetching new message data:', error);
-        } else if (data) {
-          console.log('Fetched new message:', data); // Log new message data
-          setMessages((prevMessages) => [...prevMessages, data]);
+        // Handle document creation
+        if (response.events.includes('databases.*.collections.*.documents.*.create')) {
+          const newMessage = response.payload as Message;
+          setMessages((prevMessages) => [...prevMessages, newMessage]);
         }
-      })
-      .subscribe();
+      }
+    );
 
     // Clean up subscription on component unmount
     return () => {
-      subscription.unsubscribe();
+      unsubscribe();
     };
-
-  }, []); // Empty dependency array means this runs once on mount
+  }, []);
 
   // Auto-scroll to the latest message when messages change
   useEffect(() => {
@@ -117,21 +112,22 @@ const Messaging = () => {
       return;
     }
 
-    const { error } = await supabase
-      .from('messages')
-      .insert([
+    try {
+      await databases.createDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.collections.messages,
+        ID.unique(),
         {
-          user_id: user.id,
+          user_id: user.$id,
           content: values.content,
-        },
-      ]);
+        }
+      );
 
-    if (error) {
+      // Message sent successfully, real-time subscription will add it to the list
+      form.reset();
+    } catch (error: any) {
       console.error('Error sending message:', error);
       showError('Failed to send message.');
-    } else {
-      // Message sent successfully, real-time subscription will add it to the list
-      form.reset(); // Clear the form
     }
   }
 
@@ -237,28 +233,26 @@ const Messaging = () => {
           ) : (
             messages.map((message) => (
               <div
-                key={message.id}
+                key={message.$id}
                 className={cn(
                   "flex items-start space-x-3",
-                  isCurrentUser(message.user_id) ? "justify-end" : "justify-start" // Align right for current user
+                  isCurrentUser(message.user_id) ? "justify-end" : "justify-start"
                 )}
               >
-                {/* Could add avatar here */}
                 <div
                   className={cn(
-                    "max-w-xs p-3 rounded-lg", // Basic bubble styling
+                    "max-w-xs p-3 rounded-lg",
                     isCurrentUser(message.user_id)
-                      ? "bg-blue-500 text-white" // Blue background for current user
-                      : "bg-gray-300 text-gray-800" // Gray background for others
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-300 text-gray-800"
                   )}
                 >
-                  {/* Display user_id for now */}
                   <p className="text-sm font-semibold mb-1">
                     User ID: {message.user_id}
                   </p>
                   <p>{message.content}</p>
-                  <p className="text-xs mt-1 opacity-75"> {/* Dim timestamp slightly */}
-                    {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  <p className="text-xs mt-1 opacity-75">
+                    {new Date(message.$createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
               </div>
