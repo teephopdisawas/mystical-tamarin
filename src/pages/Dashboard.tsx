@@ -193,6 +193,39 @@ const Dashboard = () => {
               To-Do List
             </Link>
           </li>
+          <li>
+            <Link
+              to="/pomodoro"
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "w-full justify-start"
+              )}
+            >
+              Pomodoro Timer
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/password-generator"
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "w-full justify-start"
+              )}
+            >
+              Password Gen
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/unit-converter"
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "w-full justify-start"
+              )}
+            >
+              Unit Converter
+            </Link>
+          </li>
           {/* Add links for future mini-apps here */}
         </ul>
         <div className="mt-auto">
