@@ -40,6 +40,29 @@ This application includes a complete abstraction layer that allows you to use an
 2. **Firebase** - Google's cloud platform with Firestore and real-time updates
 3. **Appwrite** - Open-source backend with self-hosting options
 
+## Multilingual Support (i18n)
+
+The entire application interface is available in **5 languages**:
+
+- 🇬🇧 **English** - Default language
+- 🇪🇸 **Spanish** (Español)
+- 🇹🇭 **Thai** (ไทย)
+- 🇱🇹 **Lithuanian** (Lietuvių)
+- 🇵🇱 **Polish** (Polski)
+
+### Features:
+- **Automatic Language Detection** - Detects browser language on first visit
+- **Language Switcher** - Easy dropdown in the dashboard sidebar
+- **Persistent Selection** - Your language choice is saved locally
+- **Complete Translation** - All UI text, navigation, and messages are translated
+- **Easy to Extend** - Add new languages by creating JSON translation files
+
+### How to Switch Languages:
+1. Open the dashboard
+2. Find the language switcher (🌐) in the sidebar
+3. Select your preferred language from the dropdown
+4. The entire app updates instantly!
+
 ## Getting Started
 
 ### Prerequisites
