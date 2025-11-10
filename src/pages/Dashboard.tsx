@@ -226,6 +226,28 @@ const Dashboard = () => {
               Unit Converter
             </Link>
           </li>
+          <li>
+            <Link
+              to="/flashcards"
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "w-full justify-start"
+              )}
+            >
+              Flashcards
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/language-learning"
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "w-full justify-start"
+              )}
+            >
+              Languages
+            </Link>
+          </li>
           {/* Add links for future mini-apps here */}
         </ul>
         <div className="mt-auto">

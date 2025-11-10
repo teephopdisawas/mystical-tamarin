@@ -19,6 +19,8 @@ const TodoList = lazy(() => import("./pages/TodoList"));
 const Pomodoro = lazy(() => import("./pages/Pomodoro"));
 const PasswordGenerator = lazy(() => import("./pages/PasswordGenerator"));
 const UnitConverter = lazy(() => import("./pages/UnitConverter"));
+const Flashcards = lazy(() => import("./pages/Flashcards"));
+const LanguageLearning = lazy(() => import("./pages/LanguageLearning"));
 
 const queryClient = new QueryClient();
 
@@ -47,6 +49,8 @@ const App = () => (
             <Route path="/pomodoro" element={<Pomodoro />} />
             <Route path="/password-generator" element={<PasswordGenerator />} />
             <Route path="/unit-converter" element={<UnitConverter />} />
+            <Route path="/flashcards" element={<Flashcards />} />
+            <Route path="/language-learning" element={<LanguageLearning />} />
             <Route path="/" element={<Index />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

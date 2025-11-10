@@ -16,6 +16,13 @@ A comprehensive productivity suite built with React and TypeScript, featuring su
 - **Pomodoro Timer**: Focus timer with customizable work/break intervals
 - **Password Generator**: Generate secure passwords with customizable options
 - **Unit Converter**: Convert between different units (length, weight, temperature, volume, area, speed, time)
+- **Flashcards**: Create custom flashcard decks for studying any subject
+- **Language Learning**: Learn Spanish, Lithuanian, and Polish with built-in vocabulary and phrases
+  - Interactive flashcards mode
+  - Type-answer practice
+  - Text-to-speech pronunciation
+  - 100+ vocabulary words per language
+  - Common phrases with pronunciation guides
 
 ### Planned Features (Database Support Ready)
 - **Habit Tracker**: Track daily, weekly, and monthly habits
@@ -252,6 +259,9 @@ The application uses the following tables (see `database_migration.sql`):
 - `kanban_columns` - Board columns
 - `kanban_cards` - Task cards
 - `markdown_docs` - Markdown documents
+- `flashcard_decks` - Flashcard deck organization
+- `flashcards` - Individual flashcard items
+- `language_progress` - Language learning progress tracking
 
 ## Contributing
 

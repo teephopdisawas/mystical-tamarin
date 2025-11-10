@@ -249,3 +249,100 @@ CREATE INDEX IF NOT EXISTS idx_kanban_columns_board_id ON kanban_columns(board_i
 CREATE INDEX IF NOT EXISTS idx_kanban_cards_board_id ON kanban_cards(board_id);
 CREATE INDEX IF NOT EXISTS idx_kanban_cards_column_id ON kanban_cards(column_id);
 CREATE INDEX IF NOT EXISTS idx_markdown_docs_user_id ON markdown_docs(user_id);
+
+-- Flashcard Decks Table
+CREATE TABLE IF NOT EXISTS flashcard_decks (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    description TEXT,
+    category TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Flashcards Table
+CREATE TABLE IF NOT EXISTS flashcards (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    deck_id UUID NOT NULL REFERENCES flashcard_decks(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    front TEXT NOT NULL,
+    back TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Language Learning Progress Table
+CREATE TABLE IF NOT EXISTS language_progress (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    language_code TEXT NOT NULL,
+    words_learned INTEGER DEFAULT 0,
+    total_score INTEGER DEFAULT 0,
+    total_attempts INTEGER DEFAULT 0,
+    last_practiced TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Flashcard Decks RLS
+ALTER TABLE flashcard_decks ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own flashcard decks"
+    ON flashcard_decks FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own flashcard decks"
+    ON flashcard_decks FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own flashcard decks"
+    ON flashcard_decks FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own flashcard decks"
+    ON flashcard_decks FOR DELETE
+    USING (auth.uid() = user_id);
+
+-- Flashcards RLS
+ALTER TABLE flashcards ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own flashcards"
+    ON flashcards FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own flashcards"
+    ON flashcards FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own flashcards"
+    ON flashcards FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own flashcards"
+    ON flashcards FOR DELETE
+    USING (auth.uid() = user_id);
+
+-- Language Progress RLS
+ALTER TABLE language_progress ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own language progress"
+    ON language_progress FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own language progress"
+    ON language_progress FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own language progress"
+    ON language_progress FOR UPDATE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own language progress"
+    ON language_progress FOR DELETE
+    USING (auth.uid() = user_id);
+
+-- Indexes for flashcards
+CREATE INDEX IF NOT EXISTS idx_flashcard_decks_user_id ON flashcard_decks(user_id);
+CREATE INDEX IF NOT EXISTS idx_flashcards_deck_id ON flashcards(deck_id);
+CREATE INDEX IF NOT EXISTS idx_flashcards_user_id ON flashcards(user_id);
+CREATE INDEX IF NOT EXISTS idx_language_progress_user_id ON language_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_language_progress_language_code ON language_progress(language_code);
