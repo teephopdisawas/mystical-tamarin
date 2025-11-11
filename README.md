@@ -42,13 +42,20 @@ This application includes a complete abstraction layer that allows you to use an
 
 ## Multilingual Support (i18n)
 
-The entire application interface is available in **5 languages**:
+The entire application interface is available in **12 languages**:
 
 - 🇬🇧 **English** - Default language
 - 🇪🇸 **Spanish** (Español)
 - 🇹🇭 **Thai** (ไทย)
 - 🇱🇹 **Lithuanian** (Lietuvių)
 - 🇵🇱 **Polish** (Polski)
+- 🇱🇦 **Lao** (ລາວ)
+- 🇨🇳 **Chinese** (中文)
+- 🇭🇰 **Cantonese** (粵語)
+- 🇮🇳 **Hindi** (हिन्दी)
+- 🇻🇳 **Vietnamese** (Tiếng Việt)
+- 🇮🇩 **Indonesian** (Bahasa Indonesia)
+- 🇯🇵 **Japanese** (日本語)
 
 ### Features:
 - **Automatic Language Detection** - Detects browser language on first visit

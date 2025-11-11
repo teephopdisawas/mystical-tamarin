@@ -7,6 +7,13 @@ import es from './locales/es.json';
 import th from './locales/th.json';
 import lt from './locales/lt.json';
 import pl from './locales/pl.json';
+import lo from './locales/lo.json';
+import zh from './locales/zh.json';
+import yue from './locales/yue.json';
+import hi from './locales/hi.json';
+import vi from './locales/vi.json';
+import id from './locales/id.json';
+import ja from './locales/ja.json';
 
 const resources = {
   en: { translation: en },
@@ -14,6 +21,13 @@ const resources = {
   th: { translation: th },
   lt: { translation: lt },
   pl: { translation: pl },
+  lo: { translation: lo },
+  zh: { translation: zh },
+  yue: { translation: yue },
+  hi: { translation: hi },
+  vi: { translation: vi },
+  id: { translation: id },
+  ja: { translation: ja },
 };
 
 i18n
@@ -22,7 +36,7 @@ i18n
   .init({
     resources,
     fallbackLng: 'en', // Default language
-    supportedLngs: ['en', 'es', 'th', 'lt', 'pl'],
+    supportedLngs: ['en', 'es', 'th', 'lt', 'pl', 'lo', 'zh', 'yue', 'hi', 'vi', 'id', 'ja'],
     interpolation: {
       escapeValue: false, // React already escapes
     },
