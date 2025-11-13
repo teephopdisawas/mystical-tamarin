@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'; // Import cn utility
 import { User } from '@supabase/supabase-js';
 import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useSettings } from '@/contexts/SettingsContext';
 
 // Define the schema for the profile update form
 const profileFormSchema = z.object({
@@ -23,6 +24,7 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 const Dashboard = () => {
   const { t } = useTranslation();
+  const { settings } = useSettings();
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<{ first_name: string | null; last_name: string | null } | null>(null);
@@ -255,7 +257,16 @@ const Dashboard = () => {
             </Link>
           </li>
         </ul>
-        <div className="mt-auto">
+        <div className="mt-auto space-y-2">
+          <Link
+            to="/settings"
+            className={cn(
+              buttonVariants({ variant: "outline" }),
+              "w-full justify-start"
+            )}
+          >
+            Settings
+          </Link>
            <Button onClick={handleLogout} className="w-full">{t('common.logout')}</Button>
         </div>
       </div>
