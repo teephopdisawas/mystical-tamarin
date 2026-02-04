@@ -5,7 +5,7 @@ import Sidebar from '@/components/Sidebar.vue'
 import Button from '@/components/ui/Button.vue'
 import Input from '@/components/ui/Input.vue'
 import { showError } from '@/utils/toast'
-import { Send } from 'lucide-vue-next'
+import { Send, MessageCircle } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
 import type { User } from '@supabase/supabase-js'
 
@@ -104,47 +104,57 @@ const isCurrentUser = (messageUserId: string) => {
 </script>
 
 <template>
-  <div v-if="loading" class="flex items-center justify-center min-h-screen">
-    Loading messages...
+  <div v-if="loading" class="flex items-center justify-center min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50">
+    <div class="flex flex-col items-center gap-4">
+      <div class="w-12 h-12 border-4 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+      <p class="text-muted-foreground">Loading messages...</p>
+    </div>
   </div>
-  <div v-else-if="!user" class="flex items-center justify-center min-h-screen">
-    Please log in to view messages.
+  <div v-else-if="!user" class="flex items-center justify-center min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50">
+    <p class="text-muted-foreground">Please log in to view messages.</p>
   </div>
-  <div v-else class="flex min-h-screen bg-gray-100">
+  <div v-else class="flex min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50">
     <Sidebar />
     
     <div class="flex-1 p-8 flex flex-col h-screen">
-      <div class="text-center mb-8">
-        <h1 class="text-4xl font-bold mb-2">Public Chat</h1>
-        <p class="text-xl text-gray-600 mt-4">Chat with other logged-in users.</p>
+      <!-- Header -->
+      <div class="text-center mb-6">
+        <div class="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-medium mb-4">
+          <MessageCircle class="w-4 h-4" />
+          Public Chat
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 bg-clip-text text-transparent mb-2">
+          Public Chat
+        </h1>
+        <p class="text-muted-foreground">Chat with other logged-in users</p>
       </div>
 
       <!-- Message Display Area -->
-      <div class="flex-1 overflow-y-auto p-4 bg-white rounded shadow-md mb-4 space-y-4">
-        <p v-if="messages.length === 0" class="text-center text-gray-600">
+      <div class="flex-1 overflow-y-auto p-6 bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 mb-6 space-y-4">
+        <p v-if="messages.length === 0" class="text-center text-muted-foreground py-12">
           No messages yet. Send one below!
         </p>
         <div
           v-for="message in messages"
           :key="message.id"
           :class="cn(
-            'flex items-start space-x-3',
+            'flex items-start gap-3',
             isCurrentUser(message.user_id) ? 'justify-end' : 'justify-start'
           )"
         >
           <div
             :class="cn(
-              'max-w-xs p-3 rounded-lg',
+              'max-w-sm p-4 rounded-2xl shadow-md',
               isCurrentUser(message.user_id)
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-300 text-gray-800'
+                ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-br-md'
+                : 'bg-white text-slate-800 border border-slate-100 rounded-bl-md'
             )"
           >
-            <p class="text-sm font-semibold mb-1">
-              User ID: {{ message.user_id.slice(0, 8) }}...
+            <p class="text-xs font-semibold mb-2 opacity-75">
+              {{ isCurrentUser(message.user_id) ? 'You' : `User: ${message.user_id.slice(0, 8)}...` }}
             </p>
-            <p>{{ message.content }}</p>
-            <p class="text-xs mt-1 opacity-75">
+            <p class="leading-relaxed">{{ message.content }}</p>
+            <p class="text-xs mt-2 opacity-60">
               {{ new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
             </p>
           </div>
@@ -153,15 +163,15 @@ const isCurrentUser = (messageUserId: string) => {
       </div>
 
       <!-- New Message Form -->
-      <div class="bg-white p-4 rounded shadow-md">
-        <form @submit.prevent="handleSendMessage" class="flex space-x-2">
+      <div class="bg-white/80 backdrop-blur-xl p-4 rounded-2xl shadow-xl border border-white/20">
+        <form @submit.prevent="handleSendMessage" class="flex gap-3">
           <Input
             v-model="newMessage"
             placeholder="Type your message..."
-            class="flex-1"
+            class="flex-1 h-12 bg-white/50 border-slate-200 focus:border-blue-500 transition-colors"
           />
-          <Button type="submit" size="icon">
-            <Send class="h-4 w-4" />
+          <Button type="submit" size="icon" class="h-12 w-12 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg shadow-blue-500/25">
+            <Send class="h-5 w-5" />
           </Button>
         </form>
       </div>

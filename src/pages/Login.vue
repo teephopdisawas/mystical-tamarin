@@ -56,44 +56,63 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="flex items-center justify-center min-h-screen bg-gray-100">
-    <div class="w-full max-w-md p-8 space-y-6 bg-white rounded shadow-md">
-      <h2 class="text-2xl font-bold text-center text-gray-900">
-        {{ isSignUp ? 'Create an account' : 'Sign in to your portal' }}
-      </h2>
+  <div class="flex items-center justify-center min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50">
+    <div class="w-full max-w-md p-8 space-y-8 bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 mx-4">
+      <!-- Logo/Icon -->
+      <div class="text-center">
+        <div class="mx-auto w-16 h-16 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+            <polyline points="10 17 15 12 10 7"/>
+            <line x1="15" y1="12" x2="3" y2="12"/>
+          </svg>
+        </div>
+        <h2 class="text-3xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+          {{ isSignUp ? 'Create Account' : 'Welcome Back' }}
+        </h2>
+        <p class="text-muted-foreground mt-2">
+          {{ isSignUp ? 'Start your journey with us' : 'Sign in to your portal' }}
+        </p>
+      </div>
       
-      <form @submit.prevent="handleSubmit" class="space-y-4">
+      <form @submit.prevent="handleSubmit" class="space-y-5">
         <div class="space-y-2">
-          <Label for="email">Email</Label>
+          <Label for="email" class="text-sm font-medium text-foreground">Email</Label>
           <Input
             id="email"
             v-model="email"
             type="email"
             placeholder="you@example.com"
             required
+            class="h-12 bg-white/50 border-slate-200 focus:border-violet-500 transition-colors"
           />
         </div>
         
         <div class="space-y-2">
-          <Label for="password">Password</Label>
+          <Label for="password" class="text-sm font-medium text-foreground">Password</Label>
           <Input
             id="password"
             v-model="password"
             type="password"
             placeholder="••••••••"
             required
+            class="h-12 bg-white/50 border-slate-200 focus:border-violet-500 transition-colors"
           />
         </div>
         
-        <Button type="submit" class="w-full" :disabled="loading">
-          {{ loading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Sign In') }}
+        <Button 
+          type="submit" 
+          class="w-full h-12 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-medium shadow-lg shadow-violet-500/25 transition-all duration-200" 
+          :disabled="loading"
+        >
+          {{ loading ? 'Loading...' : (isSignUp ? 'Create Account' : 'Sign In') }}
         </Button>
       </form>
       
-      <div class="text-center">
+      <div class="text-center pt-2">
         <button
           type="button"
-          class="text-sm text-blue-600 hover:underline"
+          class="text-sm text-violet-600 hover:text-violet-700 font-medium hover:underline transition-colors"
           @click="isSignUp = !isSignUp"
         >
           {{ isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up" }}
