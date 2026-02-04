@@ -1,4 +1,4 @@
-import { toast } from "sonner";
+import { toast } from "vue-sonner";
 
 export const showSuccess = (message: string) => {
   toast.success(message);
@@ -12,6 +12,6 @@ export const showLoading = (message: string) => {
   return toast.loading(message);
 };
 
-export const dismissToast = (toastId: string) => {
+export const dismissToast = (toastId: string | number) => {
   toast.dismiss(toastId);
 };
