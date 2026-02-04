@@ -8,7 +8,7 @@ import Label from '@/components/ui/Label.vue'
 import Card from '@/components/ui/Card.vue'
 import CardContent from '@/components/ui/CardContent.vue'
 import { showSuccess, showError } from '@/utils/toast'
-import { Trash2, CheckCircle, Circle, Edit } from 'lucide-vue-next'
+import { Trash2, CheckCircle, Circle, Edit, ListTodo, Plus, Calendar } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import type { User } from '@supabase/supabase-js'
@@ -173,67 +173,95 @@ const formatDueDate = (dateStr: string) => {
 </script>
 
 <template>
-  <div v-if="loading" class="flex items-center justify-center min-h-screen">
-    Loading todos...
+  <div v-if="loading" class="flex items-center justify-center min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50">
+    <div class="flex flex-col items-center gap-4">
+      <div class="w-12 h-12 border-4 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+      <p class="text-muted-foreground">Loading todos...</p>
+    </div>
   </div>
-  <div v-else-if="!user" class="flex items-center justify-center min-h-screen">
-    Please log in to view your todos.
+  <div v-else-if="!user" class="flex items-center justify-center min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50">
+    <p class="text-muted-foreground">Please log in to view your todos.</p>
   </div>
-  <div v-else class="flex min-h-screen bg-gray-100">
+  <div v-else class="flex min-h-screen bg-gradient-to-br from-violet-50 via-white to-purple-50">
     <Sidebar />
     
     <div class="flex-1 p-8 overflow-y-auto">
-      <div class="text-center mb-8">
-        <h1 class="text-4xl font-bold mb-2">Your To-Do List</h1>
-        <p class="text-xl text-gray-600 mt-4">Manage your tasks.</p>
+      <!-- Header -->
+      <div class="text-center mb-10">
+        <div class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium mb-4">
+          <ListTodo class="w-4 h-4" />
+          To-Do List
+        </div>
+        <h1 class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-600 via-purple-500 to-indigo-600 bg-clip-text text-transparent mb-3">
+          Your To-Do List
+        </h1>
+        <p class="text-lg text-muted-foreground">Manage your tasks efficiently</p>
       </div>
 
       <!-- New Todo Form -->
-      <div class="bg-white p-6 rounded shadow-md max-w-md mx-auto mb-8">
-        <h2 class="text-2xl font-bold mb-4 text-center">Add New Task</h2>
+      <div class="bg-white/80 backdrop-blur-xl p-8 rounded-2xl shadow-xl border border-white/20 max-w-lg mx-auto mb-10">
+        <div class="flex items-center gap-4 mb-6">
+          <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/25">
+            <Plus class="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-foreground">Add New Task</h2>
+            <p class="text-muted-foreground text-sm">Create a new to-do item</p>
+          </div>
+        </div>
         <form @submit.prevent="handleCreateTodo" class="space-y-4">
           <div class="space-y-2">
-            <Label for="task">Task</Label>
-            <Input id="task" v-model="newTask" placeholder="Enter a new task..." />
+            <Label for="task" class="text-sm font-medium">Task</Label>
+            <Input id="task" v-model="newTask" placeholder="Enter a new task..." class="h-12 bg-white/50 border-slate-200 focus:border-indigo-500 transition-colors" />
           </div>
           <div class="space-y-2">
-            <Label for="due_date">Due Date (Optional)</Label>
-            <Input id="due_date" v-model="newDueDate" type="date" />
+            <Label for="due_date" class="text-sm font-medium">Due Date (Optional)</Label>
+            <Input id="due_date" v-model="newDueDate" type="date" class="h-12 bg-white/50 border-slate-200 focus:border-indigo-500 transition-colors" />
           </div>
-          <Button type="submit" class="w-full">Add Task</Button>
+          <Button type="submit" class="w-full h-12 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium shadow-lg shadow-indigo-500/25 transition-all">
+            Add Task
+          </Button>
         </form>
       </div>
 
       <!-- Todo List -->
-      <div class="max-w-md mx-auto space-y-4">
-        <p v-if="todos.length === 0" class="text-center text-gray-600">
+      <div class="max-w-lg mx-auto space-y-4">
+        <p v-if="todos.length === 0" class="text-center text-muted-foreground py-8">
           No tasks yet. Add one above!
         </p>
-        <Card v-for="todo in todos" :key="todo.id">
-          <CardContent class="flex items-center justify-between p-4">
-            <div class="flex items-center space-x-3 flex-grow">
+        <Card v-for="todo in todos" :key="todo.id" class="bg-white/80 backdrop-blur-xl border border-white/20 shadow-lg hover:shadow-xl transition-all duration-200">
+          <CardContent class="flex items-center justify-between p-5">
+            <div class="flex items-center gap-4 flex-grow">
               <Button
                 variant="ghost"
                 size="icon"
                 @click="handleToggleComplete(todo)"
+                :class="cn(
+                  'h-10 w-10 rounded-full transition-all',
+                  todo.is_completed ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                )"
               >
-                <CheckCircle v-if="todo.is_completed" class="h-5 w-5 text-green-500" />
-                <Circle v-else class="h-5 w-5 text-gray-500" />
+                <CheckCircle v-if="todo.is_completed" class="h-5 w-5" />
+                <Circle v-else class="h-5 w-5" />
               </Button>
               <div class="flex flex-col">
-                <span :class="cn(todo.is_completed ? 'line-through text-gray-500' : '')">
+                <span :class="cn(
+                  'font-medium transition-all',
+                  todo.is_completed ? 'line-through text-muted-foreground' : 'text-foreground'
+                )">
                   {{ todo.task }}
                 </span>
-                <span v-if="todo.due_date" class="text-xs text-gray-500 mt-1">
+                <span v-if="todo.due_date" class="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  <Calendar class="w-3 h-3" />
                   Due: {{ formatDueDate(todo.due_date) }}
                 </span>
               </div>
             </div>
-            <div class="flex space-x-2 flex-shrink-0">
-              <Button variant="outline" size="icon" @click="handleEditClick(todo)">
+            <div class="flex gap-2 flex-shrink-0">
+              <Button variant="outline" size="icon" @click="handleEditClick(todo)" class="h-9 w-9 border-slate-200 hover:border-indigo-500 hover:text-indigo-600">
                 <Edit class="h-4 w-4" />
               </Button>
-              <Button variant="destructive" size="icon" @click="handleDeleteTodo(todo.id)">
+              <Button variant="destructive" size="icon" @click="handleDeleteTodo(todo.id)" class="h-9 w-9">
                 <Trash2 class="h-4 w-4" />
               </Button>
             </div>
@@ -242,21 +270,26 @@ const formatDueDate = (dateStr: string) => {
       </div>
 
       <!-- Edit Dialog -->
-      <div v-if="isEditDialogOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
-          <h2 class="text-xl font-bold mb-4">Edit To-Do</h2>
+      <div v-if="isEditDialogOpen" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+        <div class="bg-white/95 backdrop-blur-xl p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 border border-white/20">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+              <Edit class="w-6 h-6 text-white" />
+            </div>
+            <h2 class="text-xl font-bold">Edit To-Do</h2>
+          </div>
           <form @submit.prevent="handleEditSubmit" class="space-y-4">
             <div class="space-y-2">
-              <Label for="edit-task">Task</Label>
-              <Input id="edit-task" v-model="editTask" placeholder="Edit task..." />
+              <Label for="edit-task" class="text-sm font-medium">Task</Label>
+              <Input id="edit-task" v-model="editTask" placeholder="Edit task..." class="h-12 bg-white/50 border-slate-200 focus:border-indigo-500" />
             </div>
             <div class="space-y-2">
-              <Label for="edit-due-date">Due Date (Optional)</Label>
-              <Input id="edit-due-date" v-model="editDueDate" type="date" />
+              <Label for="edit-due-date" class="text-sm font-medium">Due Date (Optional)</Label>
+              <Input id="edit-due-date" v-model="editDueDate" type="date" class="h-12 bg-white/50 border-slate-200 focus:border-indigo-500" />
             </div>
-            <div class="flex space-x-2 justify-end">
-              <Button type="button" variant="outline" @click="handleCloseDialog">Cancel</Button>
-              <Button type="submit">Save Changes</Button>
+            <div class="flex gap-3 justify-end pt-2">
+              <Button type="button" variant="outline" @click="handleCloseDialog" class="h-11">Cancel</Button>
+              <Button type="submit" class="h-11 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700">Save Changes</Button>
             </div>
           </form>
         </div>

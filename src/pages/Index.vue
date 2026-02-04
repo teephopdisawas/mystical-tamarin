@@ -42,10 +42,16 @@ watch([session, loading], ([sess, load]) => {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-100">
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-50 via-white to-purple-50">
     <div class="text-center">
-      <h1 class="text-4xl font-bold mb-4">Loading Portal...</h1>
-      <p class="text-xl text-gray-600">Checking authentication status.</p>
+      <div class="mx-auto w-20 h-20 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl shadow-violet-500/25 mb-6 animate-pulse">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <h1 class="text-4xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent mb-4">Loading Portal...</h1>
+      <p class="text-lg text-muted-foreground">Checking authentication status</p>
+      <div class="mt-6 w-12 h-12 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
     </div>
   </div>
 </template>
